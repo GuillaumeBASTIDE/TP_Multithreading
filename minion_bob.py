@@ -1,17 +1,27 @@
-class Minion:
-    def __init__(self, identifier, task_queue, result_queue):
-        self.identifier = identifier
-        self.task_queue = task_queue
-        self.result_queue = result_queue
+from manager import Manager, HOST, PORT, AUTHKEY
+import os
 
-    def run(self):
-        print(f"[Minion {self.identifier}] demarre")
-        while True:
-            task = self.task_queue.get()
-            if task is None:
-                print(f"[Minion {self.identifier}] arret")
-                break
 
-            task.work()
-            self.result_queue.put(task)
-            print(f"[Minion {self.identifier}] tache {task.identifier} terminee")
+def main():
+    manager = Manager(address=(HOST, PORT), authkey=AUTHKEY)
+    manager.connect()
+
+    task_q = manager.get_task_queue()
+    result_q = manager.get_result_queue()
+
+    minion_id = os.getpid()
+    print(f"[Minion {minion_id}] Démarré")
+
+    while True:
+        task = task_q.get()
+
+        if task is None:
+            print(f"[Minion {minion_id}] Signal d'arrêt reçu")
+            break
+
+        task.work()
+        result_q.put(task)
+
+
+if __name__ == "__main__":
+    main()
