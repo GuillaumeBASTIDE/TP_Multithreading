@@ -1,27 +1,23 @@
-import multiprocessing as mp
-from boss_gru import Boss
-from minion_bob import Minion
+from multiprocessing.managers import BaseManager
+from multiprocessing import Queue
 
+HOST = "localhost"
+PORT = 50000
 
-class QueueManager:
-    def __init__(self, n_minions=2):
-        self.task_queue = mp.Queue()
-        self.result_queue = mp.Queue()
-        self.n_minions = n_minions
-        self.processes = []
+class Manager(BaseManager):
+    pass
 
-    def start(self, n_tasks=5):
-        boss = Boss(self.task_queue, n_tasks)
-        boss_process = mp.Process(target=boss.run)
-        self.processes.append(boss_process)
-        boss_process.start()
+task_queue = Queue()
+result_queue = Queue()
 
-        for i in range(self.n_minions):
-            minion = Minion(i, self.task_queue, self.result_queue)
-            p = mp.Process(target=minion.run)
-            self.processes.append(p)
-            p.start()
+Manager.register("get_task_queue", callable=lambda: task_queue)
+Manager.register("get_result_queue", callable=lambda: result_queue)
 
-    def stop(self):
-        for p in self.processes:
-            p.join()
+def main():
+    manager = Manager(address=(HOST, PORT), authkey=AUTHKEY)
+    server = manager.get_server()
+    print("[Manager] Serveur démarré")
+    server.serve_forever()
+
+if __name__ == "__main__":
+    main()
